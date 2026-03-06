@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>gws - Risks & Known Issues</title>
+<style>
+  :root {
+    --bg: #0d1117; --bg-secondary: #161b22; --bg-tertiary: #21262d;
+    --text: #c9d1d9; --text-muted: #8b949e; --text-bright: #f0f6fc;
+    --accent: #58a6ff; --green: #3fb950; --orange: #d29922; --red: #f85149;
+    --border: #30363d; --radius: 8px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; line-height: 1.6; padding: 2rem; max-width: 1200px; margin: 0 auto; }
+  h1 { color: var(--text-bright); font-size: 2rem; margin-bottom: 0.5rem; }
+  h2 { color: var(--text-bright); font-size: 1.4rem; margin: 2rem 0 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+  nav { margin-bottom: 2rem; font-size: 0.9rem; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .risk-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1rem; }
+  .risk-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+  .risk-title { font-size: 1.1rem; font-weight: 600; color: var(--text-bright); }
+  .badge { padding: 0.2rem 0.7rem; border-radius: 12px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+  .badge-high { background: rgba(248,81,73,0.15); color: var(--red); }
+  .badge-medium { background: rgba(210,153,34,0.15); color: var(--orange); }
+  .badge-low { background: rgba(63,185,80,0.15); color: var(--green); }
+  .badge-safe { background: rgba(63,185,80,0.15); color: var(--green); }
+  .evidence { background: var(--bg-tertiary); border-radius: 4px; padding: 0.75rem; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.85rem; margin-top: 0.5rem; }
+  table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+  th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+  th { color: var(--text-muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; }
+  td { font-size: 0.9rem; }
+  code { background: var(--bg-tertiary); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.85rem; }
+  .section { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1rem; }
+  footer { text-align: center; color: var(--text-muted); font-size: 0.8rem; margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<nav><a href="index.html">Dashboard</a> | <a href="security.html">Security</a> | <a href="architecture.html">Architecture</a> | <a href="dependencies.html">Dependencies</a> | <a href="github-activity.html">GitHub</a></nav>
+
+<h1>Risks & Known Issues</h1>
+<p style="color: var(--text-muted); margin-bottom: 2rem;">Open issues, identified risks, and harm assessment</p>
+
+<h2>Risk Cards</h2>
+
+<div class="risk-card">
+  <div class="risk-header">
+    <span class="risk-title">Unsafe File Path Handling in --upload / --output</span>
+    <span class="badge badge-medium">MEDIUM</span>
+  </div>
+  <p>GitHub Issue #251 reports that <code>--upload</code> and <code>--output</code> flags may accept unsafe filesystem paths. While <code>validate.rs</code> provides path validation helpers, they may not be applied to all code paths.</p>
+  <div class="evidence">
+    Issue: #251 "Security: dynamic --upload / --output accept unsafe filesystem paths"<br>
+    Status: OPEN<br>
+    Mitigation: validate.rs provides validate_safe_output_dir() and validate_safe_dir_path()
+  </div>
+</div>
+
+<div class="risk-card">
+  <div class="risk-header">
+    <span class="risk-title">Discovery Document Fetch Failures (HTTP 404)</span>
+    <span class="badge badge-medium">MEDIUM</span>
+  </div>
+  <p>Issues #255 and #256 report Discovery Document fetch failures on macOS with rustls-tls, causing all API commands to fail. This is a reliability issue, not a security issue, but affects all functionality.</p>
+  <div class="evidence">
+    Issue: #255 "All API commands fail: Discovery Document fetch returns 404 (macOS, v0.6.3)"<br>
+    Issue: #256 "Discovery Document fetch fails with rustls-tls on macOS (HTTP 404)"<br>
+    Status: OPEN
+  </div>
+</div>
+
+<div class="risk-card">
+  <div class="risk-header">
+    <span class="risk-title">Non-ASCII Subject Encoding in Gmail</span>
+    <span class="badge badge-low">LOW</span>
+  </div>
+  <p>Issue #263 reports that <code>gws gmail +send</code> incorrectly encodes non-ASCII subject lines, which could lead to garbled email subjects. Information loss risk for internationalized email.</p>
+  <div class="evidence">
+    Issue: #263 "gws gmail +send incorrectly encodes non-ASCII subject lines"<br>
+    Status: OPEN
+  </div>
+</div>
+
+<div class="risk-card">
+  <div class="risk-header">
+    <span class="risk-title">OAuth Scope Mismatch in Gmail Triage</span>
+    <span class="badge badge-low">LOW</span>
+  </div>
+  <p>Issue #265: <code>gmail +triage</code> selects metadata scope but fails with 403 when using query parameter. Functional issue causing command failure.</p>
+  <div class="evidence">
+    Issue: #265 "gmail +triage selects metadata scope and fails with q parameter (403)"<br>
+    Status: OPEN
+  </div>
+</div>
+
+<div class="risk-card">
+  <div class="risk-header">
+    <span class="risk-title">Nested Resource Commands Fail</span>
+    <span class="badge badge-low">LOW</span>
+  </div>
+  <p>Issue #262: Nested resource commands produce "unrecognized subcommand" errors. This is a functional bug in the dynamic command tree builder.</p>
+  <div class="evidence">
+    Issue: #262 "Nested resource commands fail with 'unrecognized subcommand'"<br>
+    Status: OPEN
+  </div>
+</div>
+
+<div class="risk-card">
+  <div class="risk-header">
+    <span class="risk-title">UTC Timezone Assumption in Calendar</span>
+    <span class="badge badge-low">LOW</span>
+  </div>
+  <p>Issue #259: <code>agenda --today</code> uses UTC for day boundaries, producing wrong results in non-UTC timezones. Information loss risk for calendar queries.</p>
+  <div class="evidence">
+    Issue: #259 "agenda --today uses UTC for day boundaries, wrong results in non-UTC timezones"<br>
+    Status: OPEN
+  </div>
+</div>
+
+<h2>Harm Assessment - What This Project Cannot Do</h2>
+<table>
+  <tr><th>Potential Harm</th><th>Possible?</th><th>Rationale</th></tr>
+  <tr><td>Steal credentials silently</td><td><span class="badge badge-safe">NO</span></td><td>No network calls except to googleapis.com. Credentials stay local or go to Google OAuth only.</td></tr>
+  <tr><td>Exfiltrate user data</td><td><span class="badge badge-safe">NO</span></td><td>No third-party services contacted. All data flows to/from Google APIs with user's OAuth token.</td></tr>
+  <tr><td>Install malware</td><td><span class="badge badge-safe">NO</span></td><td>No auto-update, no plugin system, no code execution from network.</td></tr>
+  <tr><td>Mine cryptocurrency</td><td><span class="badge badge-safe">NO</span></td><td>No compute-intensive operations. CLI exits after each invocation.</td></tr>
+  <tr><td>Track user behavior</td><td><span class="badge badge-safe">NO</span></td><td>Zero telemetry or analytics infrastructure.</td></tr>
+  <tr><td>Modify system files</td><td><span class="badge badge-safe">NO</span></td><td>Only writes to ~/.config/gws/ directory.</td></tr>
+  <tr><td>Execute arbitrary commands</td><td><span class="badge badge-safe">NO</span></td><td>Only spawns gcloud CLI during setup. No user-input command execution.</td></tr>
+  <tr><td>Access clipboard</td><td><span class="badge badge-safe">NO</span></td><td>No clipboard library in dependencies.</td></tr>
+  <tr><td>Read other app's data</td><td><span class="badge badge-safe">NO</span></td><td>Only reads its own config directory and user-specified files for upload.</td></tr>
+  <tr><td>Persist after exit</td><td><span class="badge badge-safe">NO</span></td><td>No daemon mode, no background processes, no scheduled tasks.</td></tr>
+</table>
+
+<h2>Information Loss Assessment</h2>
+<div class="section">
+  <table>
+    <tr><th>Scenario</th><th>Risk</th><th>Details</th></tr>
+    <tr><td>API response truncation</td><td><span class="badge badge-safe">NONE</span></td><td>Full JSON responses passed through. Pagination supported with --page-all.</td></tr>
+    <tr><td>Non-ASCII email subjects</td><td><span class="badge badge-medium">MEDIUM</span></td><td>Issue #263: Non-ASCII characters may be garbled in Gmail send.</td></tr>
+    <tr><td>Calendar timezone issues</td><td><span class="badge badge-medium">MEDIUM</span></td><td>Issue #259: UTC assumption may show wrong day's events.</td></tr>
+    <tr><td>Discovery Document staleness</td><td><span class="badge badge-safe">LOW</span></td><td>24h cache TTL. New API methods may not appear until cache expires.</td></tr>
+    <tr><td>Credential corruption</td><td><span class="badge badge-safe">LOW</span></td><td>Atomic writes (tmp + rename) prevent corruption on crash.</td></tr>
+  </table>
+</div>
+
+<h2>Recommendations</h2>
+<div class="section">
+  <ol style="margin-left: 1.5rem;">
+    <li style="margin-bottom: 0.75rem;"><strong>Address Issue #251</strong> (file path safety) - Ensure all --upload and --output code paths use the existing validate.rs helpers.</li>
+    <li style="margin-bottom: 0.75rem;"><strong>Fix Discovery fetch failures</strong> (#255, #256) - Investigate rustls-tls compatibility on macOS. Consider fallback to native-tls feature.</li>
+    <li style="margin-bottom: 0.75rem;"><strong>Fix non-ASCII encoding</strong> (#263) - Implement RFC 2047 encoding for email subject lines.</li>
+    <li style="margin-bottom: 0.75rem;"><strong>Fix timezone handling</strong> (#259) - Use local timezone for day boundaries in calendar commands.</li>
+    <li style="margin-bottom: 0.75rem;"><strong>Consider request timeouts</strong> - Add configurable HTTP request timeouts (currently relies on reqwest defaults).</li>
+  </ol>
+</div>
+
+<footer>Analysis generated on 2026-03-06 - Commit 59ad87327b3b8f2c188bf9fafbceab4674149e04 | <a href="index.html">Back to Dashboard</a></footer>
+</body>
+</html>

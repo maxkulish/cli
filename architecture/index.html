@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>gws - Architecture Analysis Dashboard</title>
+<style>
+  :root {
+    --bg: #0d1117; --bg-secondary: #161b22; --bg-tertiary: #21262d;
+    --text: #c9d1d9; --text-muted: #8b949e; --text-bright: #f0f6fc;
+    --accent: #58a6ff; --green: #3fb950; --orange: #d29922; --red: #f85149;
+    --border: #30363d; --radius: 8px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; line-height: 1.6; padding: 2rem; max-width: 1200px; margin: 0 auto; }
+  h1 { color: var(--text-bright); font-size: 2rem; margin-bottom: 0.5rem; }
+  h2 { color: var(--text-bright); font-size: 1.4rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+  .subtitle { color: var(--text-muted); font-size: 1rem; margin-bottom: 2rem; }
+  .verdict-banner { background: #0d2818; border: 1px solid var(--green); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem; }
+  .verdict-badge { background: var(--green); color: #000; font-weight: 700; font-size: 1.2rem; padding: 0.5rem 1.5rem; border-radius: var(--radius); }
+  .verdict-text { color: var(--green); font-size: 1.1rem; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .stat-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; text-align: center; }
+  .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--text-bright); }
+  .stat-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .risk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .risk-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
+  .risk-name { font-weight: 600; }
+  .badge { padding: 0.2rem 0.7rem; border-radius: 12px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+  .badge-safe { background: rgba(63,185,80,0.15); color: var(--green); }
+  .badge-review { background: rgba(210,153,34,0.15); color: var(--orange); }
+  .badge-danger { background: rgba(248,81,73,0.15); color: var(--red); }
+  .nav-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .nav-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; text-decoration: none; color: var(--text); transition: border-color 0.2s; }
+  .nav-card:hover { border-color: var(--accent); }
+  .nav-card h3 { color: var(--accent); margin-bottom: 0.5rem; }
+  .nav-card p { color: var(--text-muted); font-size: 0.9rem; }
+  .section { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 2rem; }
+  footer { text-align: center; color: var(--text-muted); font-size: 0.8rem; margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  nav { margin-bottom: 1rem; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+
+<h1>gws - Google Workspace CLI</h1>
+<p class="subtitle">v0.7.0 - Rust CLI - Dynamic command surface from Google Discovery Service<br>
+Repository: <a href="https://github.com/googleworkspace/cli">googleworkspace/cli</a> - Commit: <code>59ad873</code></p>
+
+<div class="verdict-banner">
+  <span class="verdict-badge">SAFE</span>
+  <span class="verdict-text">No telemetry, no data exfiltration, no hidden network calls. All communication is to authenticated Google APIs only. Credentials encrypted with AES-256-GCM.</span>
+</div>
+
+<h2>Project Statistics</h2>
+<div class="stats-grid">
+  <div class="stat-card"><div class="stat-value">170</div><div class="stat-label">Total Files</div></div>
+  <div class="stat-card"><div class="stat-value">37</div><div class="stat-label">Rust Source Files</div></div>
+  <div class="stat-card"><div class="stat-value">21.3k</div><div class="stat-label">Lines of Rust</div></div>
+  <div class="stat-card"><div class="stat-value">24</div><div class="stat-label">Direct Dependencies</div></div>
+  <div class="stat-card"><div class="stat-value">143</div><div class="stat-label">Transitive Dependencies</div></div>
+  <div class="stat-card"><div class="stat-value">42</div><div class="stat-label">Issue Contributors</div></div>
+</div>
+
+<h2>Security Risk Summary</h2>
+<div class="risk-grid">
+  <div class="risk-card"><span class="risk-name">Network Calls</span><span class="badge badge-safe">Google APIs Only</span></div>
+  <div class="risk-card"><span class="risk-name">Telemetry</span><span class="badge badge-safe">None</span></div>
+  <div class="risk-card"><span class="risk-name">Third-party Services</span><span class="badge badge-safe">None</span></div>
+  <div class="risk-card"><span class="risk-name">Unsafe Code</span><span class="badge badge-safe">Test-only</span></div>
+  <div class="risk-card"><span class="risk-name">Hardcoded Secrets</span><span class="badge badge-safe">None</span></div>
+  <div class="risk-card"><span class="risk-name">Process Execution</span><span class="badge badge-safe">gcloud Only</span></div>
+  <div class="risk-card"><span class="risk-name">Data Exfiltration</span><span class="badge badge-safe">None</span></div>
+  <div class="risk-card"><span class="risk-name">Keyring Access</span><span class="badge badge-safe">Legitimate</span></div>
+</div>
+
+<h2>What This Project Does</h2>
+<div class="section">
+  <p><strong>gws</strong> is a command-line tool for interacting with Google Workspace APIs (Gmail, Drive, Calendar, Sheets, Docs, Chat, etc.). Instead of hardcoding API definitions, it fetches Google's Discovery Documents at runtime and dynamically builds its CLI command tree.</p>
+  <br>
+  <p><strong>Key behaviors:</strong></p>
+  <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+    <li>Authenticates via OAuth2 (user credentials) or Service Account (ADC)</li>
+    <li>Stores credentials encrypted with AES-256-GCM in <code>~/.config/gws/</code></li>
+    <li>Caches Discovery Documents locally (24h TTL)</li>
+    <li>Sends authenticated HTTP requests to Google APIs only</li>
+    <li>Supports file upload (Drive) and email sending (Gmail)</li>
+    <li>Can run as an MCP server for Claude/LLM integration</li>
+    <li>Has a TUI wizard for OAuth scope selection</li>
+  </ul>
+  <br>
+  <p><strong>What it does NOT do:</strong> No telemetry, no auto-updates, no daemon mode, no analytics, no crash reporting, no data collection, no third-party service calls.</p>
+</div>
+
+<h2>Detail Reports</h2>
+<div class="nav-grid">
+  <a href="security.html" class="nav-card">
+    <h3>Security & Privacy Audit</h3>
+    <p>Network analysis, telemetry check, env vars, file operations, process execution, unsafe code, secrets scan</p>
+  </a>
+  <a href="architecture.html" class="nav-card">
+    <h3>Architecture & Data Flow</h3>
+    <p>Entry points, module structure, two-phase parsing, data flow diagram, storage map</p>
+  </a>
+  <a href="dependencies.html" class="nav-card">
+    <h3>Dependency Analysis</h3>
+    <p>24 direct deps classified by risk, transitive dependency audit, absence analysis</p>
+  </a>
+  <a href="risks.html" class="nav-card">
+    <h3>Risks & Known Issues</h3>
+    <p>Open security issues, information loss assessment, risk cards by severity</p>
+  </a>
+  <a href="github-activity.html" class="nav-card">
+    <h3>GitHub Issues & PRs</h3>
+    <p>50 issues, 30 PRs analyzed. Community health, bug patterns, contributor activity</p>
+  </a>
+</div>
+
+<footer>Analysis generated on 2026-03-06 - Commit 59ad87327b3b8f2c188bf9fafbceab4674149e04</footer>
+</body>
+</html>

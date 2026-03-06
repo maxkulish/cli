@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>gws - Security & Privacy Audit</title>
+<style>
+  :root {
+    --bg: #0d1117; --bg-secondary: #161b22; --bg-tertiary: #21262d;
+    --text: #c9d1d9; --text-muted: #8b949e; --text-bright: #f0f6fc;
+    --accent: #58a6ff; --green: #3fb950; --orange: #d29922; --red: #f85149;
+    --border: #30363d; --radius: 8px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; line-height: 1.6; padding: 2rem; max-width: 1200px; margin: 0 auto; }
+  h1 { color: var(--text-bright); font-size: 2rem; margin-bottom: 0.5rem; }
+  h2 { color: var(--text-bright); font-size: 1.4rem; margin: 2rem 0 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+  nav { margin-bottom: 2rem; font-size: 0.9rem; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .check-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1rem; }
+  .check-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+  .check-title { font-size: 1.1rem; font-weight: 600; color: var(--text-bright); }
+  .badge { padding: 0.2rem 0.7rem; border-radius: 12px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+  .badge-pass { background: rgba(63,185,80,0.15); color: var(--green); }
+  .badge-review { background: rgba(210,153,34,0.15); color: var(--orange); }
+  .badge-fail { background: rgba(248,81,73,0.15); color: var(--red); }
+  .evidence { background: var(--bg-tertiary); border-radius: 4px; padding: 0.75rem; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.85rem; margin-top: 0.5rem; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+  th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+  th { color: var(--text-muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; }
+  td { font-size: 0.9rem; }
+  code { background: var(--bg-tertiary); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.85rem; }
+  footer { text-align: center; color: var(--text-muted); font-size: 0.8rem; margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<nav><a href="index.html">Dashboard</a> | <a href="architecture.html">Architecture</a> | <a href="dependencies.html">Dependencies</a> | <a href="risks.html">Risks</a> | <a href="github-activity.html">GitHub</a></nav>
+
+<h1>Security & Privacy Audit</h1>
+<p style="color: var(--text-muted); margin-bottom: 2rem;">Comprehensive scan of 37 Rust source files for security concerns</p>
+
+<h2>Security Checks</h2>
+
+<div class="check-card">
+  <div class="check-header">
+    <span class="check-title">1. Network Connectivity</span>
+    <span class="badge badge-pass">PASS - Google APIs Only</span>
+  </div>
+  <p>Uses <code>reqwest</code> HTTP client exclusively for Google Workspace API calls. All URLs target <code>*.googleapis.com</code> endpoints. Uses rustls-tls (no system OpenSSL dependency).</p>
+  <div class="evidence">
+    src/client.rs:1 - reqwest client builder with User-Agent "gl-rust/gws-0.7.0"<br>
+    src/executor.rs - All HTTP requests to Discovery-defined Google API endpoints<br>
+    src/auth.rs - OAuth token exchange with oauth2.googleapis.com<br>
+    src/setup.rs - OAuth loopback to localhost only
+  </div>
+  <p style="margin-top: 0.75rem;"><strong>URLs found in source (150+):</strong> All are Google OAuth endpoints, API scopes (<code>googleapis.com/auth/*</code>), API endpoints (<code>gmail.googleapis.com</code>, <code>drive.googleapis.com</code>), and Google Cloud Console links. Zero non-Google domains.</p>
+</div>
+
+<div class="check-card">
+  <div class="check-header">
+    <span class="check-title">2. Telemetry & Analytics</span>
+    <span class="badge badge-pass">PASS - None Found</span>
+  </div>
+  <p>Zero instances of telemetry, analytics, tracking, sentry, datadog, mixpanel, amplitude, segment, posthog, opentelemetry, or newrelic. No crash reporting infrastructure.</p>
+</div>
+
+<div class="check-card">
+  <div class="check-header">
+    <span class="check-title">3. Data Exfiltration</span>
+    <span class="badge badge-pass">PASS - No Unauthorized Transmission</span>
+  </div>
+  <p>File uploads exist only for Google Drive (<code>--upload</code> flag) and Gmail attachments. All uploads are user-initiated and go to authenticated Google APIs only.</p>
+  <div class="evidence">
+    src/executor.rs:182-192 - Multipart file upload for Google Drive<br>
+    src/executor.rs:555-570 - Media upload endpoint handling<br>
+    src/helpers/gmail/send.rs - Email with attachments via Gmail API
+  </div>
+</div>
+
+<div class="check-card">
+  <div class="check-header">
+    <span class="check-title">4. Unsafe Code</span>
+    <span class="badge badge-pass">PASS - Test-Only</span>
+  </div>
+  <p>11 <code>unsafe</code> blocks found, all in <code>#[test]</code> functions for environment variable manipulation. No unsafe code in production paths. Tests use <code>#[serial_test::serial]</code> for isolation.</p>
+  <div class="evidence">
+    src/auth_commands.rs:1398-1568 - All 11 unsafe blocks (env var set/remove in tests)
+  </div>
+</div>
+
+<div class="check-card">
+  <div class="check-header">
+    <span class="check-title">5. Hardcoded Secrets</span>
+    <span class="badge badge-pass">PASS - None Found</span>
+  </div>
+  <p>No production secrets in source. Test fixtures use placeholder values ("test-id", "test-secret"). One example private key in comments (clearly fake/truncated). Real secrets loaded from env vars, encrypted files, or OS keyring.</p>
+  <p style="margin-top: 0.5rem;">Secret masking function exists: <code>mask_secret()</code> at <code>auth_commands.rs:25</code></p>
+</div>
+
+<div class="check-card">
+  <div class="check-header">
+    <span class="check-title">6. Process Execution</span>
+    <span class="badge badge-pass">PASS - Controlled</span>
+  </div>
+  <p>Only spawns <code>gcloud</code> CLI during initial setup (<code>gws auth setup</code>). Stdout/stderr properly redirected. No arbitrary command execution from user input.</p>
+  <div class="evidence">
+    src/setup.rs:416+ - Command::new("gcloud") for auth, project list, API enable
+  </div>
+</div>
+
+<div class="check-card">
+  <div class="check-header">
+    <span class="check-title">7. Keyring & Credential Access</span>
+    <span class="badge badge-pass">PASS - Legitimate</span>
+  </div>
+  <p>Uses <code>keyring</code> crate for OS-level credential storage (macOS Keychain, Windows Credential Manager). Stores AES-256-GCM encryption key. Falls back to file-based storage with restricted permissions (0600).</p>
+  <div class="evidence">
+    src/credential_store.rs:20 - keyring::Entry for "gws-cli" service<br>
+    src/credential_store.rs:50-123 - Key retrieval/storage logic
+  </div>
+</div>
+
+<div class="check-card">
+  <div class="check-header">
+    <span class="check-title">8. Input Validation</span>
+    <span class="badge badge-pass">PASS - Comprehensive</span>
+  </div>
+  <p>Dedicated <code>validate.rs</code> (569 lines) with path traversal prevention, control character rejection, API identifier validation, and symlink safety. URL path segments percent-encoded. Resource names validated.</p>
+  <div class="evidence">
+    src/validate.rs - validate_safe_output_dir(), validate_safe_dir_path()<br>
+    src/helpers/mod.rs - encode_path_segment(), validate_resource_name()
+  </div>
+</div>
+
+<h2>Environment Variables</h2>
+<table>
+  <tr><th>Variable</th><th>Purpose</th><th>Risk</th></tr>
+  <tr><td><code>GOOGLE_WORKSPACE_CLI_TOKEN</code></td><td>Pre-obtained OAuth2 access token</td><td><span class="badge badge-pass">LOW</span></td></tr>
+  <tr><td><code>GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE</code></td><td>Path to OAuth credentials JSON</td><td><span class="badge badge-pass">LOW</span></td></tr>
+  <tr><td><code>GOOGLE_WORKSPACE_CLI_CLIENT_ID</code></td><td>OAuth client ID</td><td><span class="badge badge-pass">LOW</span></td></tr>
+  <tr><td><code>GOOGLE_WORKSPACE_CLI_CLIENT_SECRET</code></td><td>OAuth client secret</td><td><span class="badge badge-pass">LOW</span></td></tr>
+  <tr><td><code>GOOGLE_WORKSPACE_CLI_CONFIG_DIR</code></td><td>Override config directory</td><td><span class="badge badge-pass">LOW</span></td></tr>
+  <tr><td><code>GOOGLE_WORKSPACE_CLI_SANITIZE_TEMPLATE</code></td><td>Model Armor template</td><td><span class="badge badge-pass">LOW</span></td></tr>
+  <tr><td><code>GOOGLE_WORKSPACE_CLI_SANITIZE_MODE</code></td><td>warn or block</td><td><span class="badge badge-pass">LOW</span></td></tr>
+  <tr><td><code>GOOGLE_WORKSPACE_PROJECT_ID</code></td><td>GCP project fallback</td><td><span class="badge badge-pass">LOW</span></td></tr>
+  <tr><td><code>GOOGLE_APPLICATION_CREDENTIALS</code></td><td>Standard Google ADC path</td><td><span class="badge badge-pass">LOW</span></td></tr>
+  <tr><td><code>USER</code> / <code>USERNAME</code></td><td>OS username for keyring entry</td><td><span class="badge badge-pass">LOW</span></td></tr>
+</table>
+
+<h2>File System Operations</h2>
+<table>
+  <tr><th>Operation</th><th>Location</th><th>Purpose</th></tr>
+  <tr><td>Write (encrypted)</td><td><code>~/.config/gws/credentials.enc</code></td><td>Encrypted OAuth credentials</td></tr>
+  <tr><td>Write (encrypted)</td><td><code>~/.config/gws/token_cache.json</code></td><td>Encrypted access token cache</td></tr>
+  <tr><td>Write</td><td><code>~/.config/gws/client_secret.json</code></td><td>OAuth client config</td></tr>
+  <tr><td>Write</td><td><code>~/.config/gws/.encryption_key</code></td><td>Fallback encryption key (0600)</td></tr>
+  <tr><td>Write</td><td><code>~/.config/gws/cache/*.json</code></td><td>Discovery Document cache (24h)</td></tr>
+  <tr><td>Delete</td><td><code>~/.config/gws/credentials.*</code></td><td>Logout cleanup</td></tr>
+  <tr><td>Atomic write</td><td>All sensitive files</td><td>Write to .tmp then rename</td></tr>
+</table>
+
+<h2>Process Execution</h2>
+<table>
+  <tr><th>Process</th><th>Context</th><th>Purpose</th></tr>
+  <tr><td><code>gcloud auth application-default login</code></td><td>setup.rs</td><td>Check gcloud availability</td></tr>
+  <tr><td><code>gcloud auth application-default print-access-token</code></td><td>setup.rs</td><td>Verify ADC working</td></tr>
+  <tr><td><code>gcloud projects list --format=json</code></td><td>setup.rs</td><td>Fetch GCP projects</td></tr>
+  <tr><td><code>gcloud services enable</code></td><td>setup.rs</td><td>Enable required APIs</td></tr>
+</table>
+
+<footer>Analysis generated on 2026-03-06 - Commit 59ad87327b3b8f2c188bf9fafbceab4674149e04 | <a href="index.html">Back to Dashboard</a></footer>
+</body>
+</html>

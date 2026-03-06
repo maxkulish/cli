@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>gws - Architecture & Data Flow</title>
+<style>
+  :root {
+    --bg: #0d1117; --bg-secondary: #161b22; --bg-tertiary: #21262d;
+    --text: #c9d1d9; --text-muted: #8b949e; --text-bright: #f0f6fc;
+    --accent: #58a6ff; --green: #3fb950; --orange: #d29922; --red: #f85149;
+    --border: #30363d; --radius: 8px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; line-height: 1.6; padding: 2rem; max-width: 1200px; margin: 0 auto; }
+  h1 { color: var(--text-bright); font-size: 2rem; margin-bottom: 0.5rem; }
+  h2 { color: var(--text-bright); font-size: 1.4rem; margin: 2rem 0 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+  nav { margin-bottom: 2rem; font-size: 0.9rem; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .section { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1rem; }
+  pre { background: var(--bg-tertiary); border-radius: 4px; padding: 1rem; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.85rem; overflow-x: auto; line-height: 1.4; color: var(--green); }
+  table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+  th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+  th { color: var(--text-muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; }
+  td { font-size: 0.9rem; }
+  code { background: var(--bg-tertiary); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.85rem; }
+  .module-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1rem; }
+  .module-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }
+  .module-card h4 { color: var(--accent); margin-bottom: 0.3rem; }
+  .module-card .lines { color: var(--text-muted); font-size: 0.8rem; }
+  footer { text-align: center; color: var(--text-muted); font-size: 0.8rem; margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+  .badge { padding: 0.2rem 0.7rem; border-radius: 12px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+  .badge-safe { background: rgba(63,185,80,0.15); color: var(--green); }
+</style>
+</head>
+<body>
+
+<nav><a href="index.html">Dashboard</a> | <a href="security.html">Security</a> | <a href="dependencies.html">Dependencies</a> | <a href="risks.html">Risks</a> | <a href="github-activity.html">GitHub</a></nav>
+
+<h1>Architecture & Data Flow</h1>
+<p style="color: var(--text-muted); margin-bottom: 2rem;">Two-phase dynamic CLI with Discovery Document-driven command surface</p>
+
+<h2>Data Flow Diagram</h2>
+<div class="section">
+<pre>
+  User Input (CLI args: gws drive files list --params '{"pageSize":5}')
+       |
+       v
+  [main.rs] Phase 1: Extract service name ("drive")
+       |
+       v
+  [discovery.rs] Fetch/cache Discovery Document
+       |  GET https://www.googleapis.com/discovery/v1/apis/drive/v3/rest
+       |  Cache: ~/.config/gws/cache/ (24h TTL)
+       v
+  [commands.rs] Build dynamic clap CLI tree from Discovery
+       |  resources -> subcommands, methods -> leaf commands
+       v
+  [main.rs] Phase 2: Parse remaining args through clap
+       |
+       v
+  [helpers/mod.rs] Check for service-specific helper
+       |  (e.g., gmail +send, drive +upload)
+       v
+  [auth.rs] Authenticate (priority chain):
+       |  1. GOOGLE_WORKSPACE_CLI_TOKEN env var
+       |  2. GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE
+       |  3. ~/.config/gws/credentials.enc (AES-256-GCM)
+       |  4. ~/.config/gws/credentials.json
+       |  5. GOOGLE_APPLICATION_CREDENTIALS (ADC)
+       |  6. ~/.config/gcloud/application_default_credentials.json
+       v
+  [executor.rs] Build & send HTTP request:
+       |  URL: {baseUrl}/{servicePath}/{method.path}
+       |  Headers: Authorization: Bearer {token}
+       |           x-goog-api-client: gl-rust/gws-0.7.0
+       |  Body: --json payload (if applicable)
+       |  Upload: --upload file (multipart)
+       v
+  [client.rs] Retry logic (429 rate limit, Retry-After, 3 max retries)
+       |
+       v
+  [executor.rs] Process response:
+       |  Parse JSON/binary
+       |  Optional: Model Armor sanitization
+       |  Pagination: --page-all / --page-limit / --page-delay
+       v
+  [formatter.rs] Format output (--format json|table|yaml|csv)
+       |
+       v
+  stdout
+</pre>
+</div>
+
+<h2>Module Structure</h2>
+<div class="module-grid">
+  <div class="module-card">
+    <h4>main.rs</h4>
+    <div class="lines">~700 lines - Entry point</div>
+    <p>Two-phase argument parsing, service routing, method resolution. Routes to auth, schema, MCP, or API execution.</p>
+  </div>
+  <div class="module-card">
+    <h4>executor.rs</h4>
+    <div class="lines">~2000 lines - HTTP execution</div>
+    <p>Request construction, multipart uploads, pagination, response formatting, Model Armor sanitization, dry-run mode.</p>
+  </div>
+  <div class="module-card">
+    <h4>setup.rs</h4>
+    <div class="lines">~2040 lines - Setup wizard</div>
+    <p>OAuth setup flow: loopback server, gcloud integration, scope prompts, project selection, API enablement.</p>
+  </div>
+  <div class="module-card">
+    <h4>setup_tui.rs</h4>
+    <div class="lines">~1738 lines - Terminal UI</div>
+    <p>Interactive TUI for scope selection, service picker, checkbox lists using ratatui + crossterm.</p>
+  </div>
+  <div class="module-card">
+    <h4>mcp_server.rs</h4>
+    <div class="lines">~1151 lines - MCP server</div>
+    <p>Model Context Protocol stdio JSON-RPC server. Exposes Google APIs as tools for Claude/LLM integration.</p>
+  </div>
+  <div class="module-card">
+    <h4>auth.rs</h4>
+    <div class="lines">~642 lines - Authentication</div>
+    <p>OAuth2 and Service Account token retrieval. Credential loading priority chain with encrypted token caching.</p>
+  </div>
+  <div class="module-card">
+    <h4>validate.rs</h4>
+    <div class="lines">~569 lines - Input validation</div>
+    <p>Path traversal prevention, control char rejection, API identifier validation, symlink safety.</p>
+  </div>
+  <div class="module-card">
+    <h4>schema.rs</h4>
+    <div class="lines">~449 lines - Schema introspection</div>
+    <p><code>gws schema</code> command for inspecting API method schemas, parameters, and request/response types.</p>
+  </div>
+  <div class="module-card">
+    <h4>credential_store.rs</h4>
+    <div class="lines">~341 lines - Encryption</div>
+    <p>AES-256-GCM encryption/decryption of credential files. OS keyring integration with file fallback.</p>
+  </div>
+  <div class="module-card">
+    <h4>commands.rs</h4>
+    <div class="lines">~276 lines - CLI builder</div>
+    <p>Recursive clap::Command tree builder from Discovery Document resources and methods.</p>
+  </div>
+  <div class="module-card">
+    <h4>discovery.rs</h4>
+    <div class="lines">~300 lines - Discovery</div>
+    <p>Serde models for Discovery Document. Fetch from Google, cache locally with 24h TTL.</p>
+  </div>
+  <div class="module-card">
+    <h4>services.rs</h4>
+    <div class="lines">~178 lines - Service registry</div>
+    <p>Maps service aliases (drive, gmail, sheets...) to Discovery API name/version.</p>
+  </div>
+  <div class="module-card">
+    <h4>helpers/*</h4>
+    <div class="lines">~3500 lines - Service helpers</div>
+    <p>12 service-specific helpers: Gmail (send, watch, triage), Drive, Sheets, Docs, Chat, Calendar, Script, Events, Model Armor, Workflows.</p>
+  </div>
+  <div class="module-card">
+    <h4>formatter.rs</h4>
+    <div class="lines">~200 lines - Output formatting</div>
+    <p>JSON (pretty), Table (aligned columns), YAML, CSV output formatters.</p>
+  </div>
+</div>
+
+<h2>Local Data Storage Map</h2>
+<div class="section">
+<pre>
+~/.config/gws/                           (or $GOOGLE_WORKSPACE_CLI_CONFIG_DIR)
+  |-- credentials.enc                    AES-256-GCM encrypted OAuth credentials
+  |-- credentials.json                   Plaintext OAuth credentials (legacy)
+  |-- token_cache.json                   Encrypted access token cache (scope-keyed)
+  |-- sa_token_cache.json                Service Account token cache
+  |-- .encryption_key                    Base64 256-bit key (fallback, 0600 perms)
+  |-- client_secret.json                 OAuth client config
+  |-- cache/
+       |-- drive_v3.json                 Cached Discovery Documents (24h TTL)
+       |-- gmail_v1.json
+       |-- ...
+</pre>
+</div>
+
+<h2>Authentication Credential Chain</h2>
+<table>
+  <tr><th>Priority</th><th>Source</th><th>Type</th></tr>
+  <tr><td>0 (highest)</td><td><code>GOOGLE_WORKSPACE_CLI_TOKEN</code> env var</td><td>Raw access token</td></tr>
+  <tr><td>1</td><td><code>GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE</code> env var</td><td>User or Service Account JSON</td></tr>
+  <tr><td>2</td><td><code>~/.config/gws/credentials.enc</code></td><td>Encrypted user credentials</td></tr>
+  <tr><td>3</td><td><code>~/.config/gws/credentials.json</code></td><td>Plaintext user credentials</td></tr>
+  <tr><td>4</td><td><code>GOOGLE_APPLICATION_CREDENTIALS</code> env var</td><td>Explicit ADC path</td></tr>
+  <tr><td>5</td><td><code>~/.config/gcloud/application_default_credentials.json</code></td><td>gcloud ADC (silent fallback)</td></tr>
+</table>
+
+<h2>What the App Does NOT Do</h2>
+<div class="section">
+  <table>
+    <tr><th>Capability</th><th>Status</th></tr>
+    <tr><td>Telemetry / usage tracking</td><td><span class="badge badge-safe">Absent</span></td></tr>
+    <tr><td>Auto-update / version checking</td><td><span class="badge badge-safe">Absent</span></td></tr>
+    <tr><td>Daemon / background mode</td><td><span class="badge badge-safe">Absent</span></td></tr>
+    <tr><td>Analytics / crash reporting</td><td><span class="badge badge-safe">Absent</span></td></tr>
+    <tr><td>Third-party service calls</td><td><span class="badge badge-safe">Absent</span></td></tr>
+    <tr><td>Plugin / dynamic module loading</td><td><span class="badge badge-safe">Absent</span></td></tr>
+    <tr><td>Local database (SQLite etc.)</td><td><span class="badge badge-safe">Absent</span></td></tr>
+    <tr><td>WebSocket connections</td><td><span class="badge badge-safe">Absent</span></td></tr>
+    <tr><td>Clipboard access</td><td><span class="badge badge-safe">Absent</span></td></tr>
+    <tr><td>Desktop UI / GUI</td><td><span class="badge badge-safe">Absent</span></td></tr>
+  </table>
+</div>
+
+<footer>Analysis generated on 2026-03-06 - Commit 59ad87327b3b8f2c188bf9fafbceab4674149e04 | <a href="index.html">Back to Dashboard</a></footer>
+</body>
+</html>

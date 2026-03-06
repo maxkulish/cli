@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>gws - Dependency Analysis</title>
+<style>
+  :root {
+    --bg: #0d1117; --bg-secondary: #161b22; --bg-tertiary: #21262d;
+    --text: #c9d1d9; --text-muted: #8b949e; --text-bright: #f0f6fc;
+    --accent: #58a6ff; --green: #3fb950; --orange: #d29922; --red: #f85149;
+    --border: #30363d; --radius: 8px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; line-height: 1.6; padding: 2rem; max-width: 1200px; margin: 0 auto; }
+  h1 { color: var(--text-bright); font-size: 2rem; margin-bottom: 0.5rem; }
+  h2 { color: var(--text-bright); font-size: 1.4rem; margin: 2rem 0 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+  nav { margin-bottom: 2rem; font-size: 0.9rem; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+  th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+  th { color: var(--text-muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; }
+  td { font-size: 0.9rem; }
+  code { background: var(--bg-tertiary); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.85rem; }
+  .badge { padding: 0.2rem 0.7rem; border-radius: 12px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+  .badge-safe { background: rgba(63,185,80,0.15); color: var(--green); }
+  .badge-review { background: rgba(210,153,34,0.15); color: var(--orange); }
+  .badge-danger { background: rgba(248,81,73,0.15); color: var(--red); }
+  .section { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1rem; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .stat-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; text-align: center; }
+  .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--text-bright); }
+  .stat-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; }
+  footer { text-align: center; color: var(--text-muted); font-size: 0.8rem; margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<nav><a href="index.html">Dashboard</a> | <a href="security.html">Security</a> | <a href="architecture.html">Architecture</a> | <a href="risks.html">Risks</a> | <a href="github-activity.html">GitHub</a></nav>
+
+<h1>Dependency Analysis</h1>
+<p style="color: var(--text-muted); margin-bottom: 2rem;">24 direct dependencies, 143 transitive crates analyzed</p>
+
+<div class="stats-grid">
+  <div class="stat-card"><div class="stat-value">24</div><div class="stat-label">Direct Deps</div></div>
+  <div class="stat-card"><div class="stat-value">143</div><div class="stat-label">Transitive Crates</div></div>
+  <div class="stat-card"><div class="stat-value" style="color: var(--green);">0</div><div class="stat-label">Concerning Deps</div></div>
+  <div class="stat-card"><div class="stat-value">3</div><div class="stat-label">Network-capable</div></div>
+</div>
+
+<h2>Direct Dependencies</h2>
+<table>
+  <tr><th>Crate</th><th>Version</th><th>Purpose</th><th>Risk</th></tr>
+  <tr><td><code>aes-gcm</code></td><td>0.10</td><td>AES-256-GCM encryption for credentials</td><td><span class="badge badge-safe">SAFE</span></td></tr>
+  <tr><td><code>anyhow</code></td><td>1</td><td>Error handling with context</td><td><span class="badge badge-safe">SAFE</span></td></tr>
+  <tr><td><code>async-trait</code></td><td>0.1.89</td><td>Async trait support (proc macro)</td><td><span class="badge badge-safe">SAFE</span></td></tr>
+  <tr><td><code>base64</code></td><td>0.22.1</td><td>Base64 encoding/decoding</td><td><span class="badge badge-safe">SAFE</span></td></tr>
+  <tr><td><code>chrono</code></td><td>0.4.44</td><td>Date/time handling</td><td><span class="badge badge-safe">SAFE</span></td></tr>
+  <tr><td><code>clap</code></td><td>4</td><td>CLI argument parsing (derive + string)</td><td><span class="badge badge-safe">SAFE</span></td></tr>
+  <tr><td><code>crossterm</code></td><td>0.29.0</td><td>Terminal interaction for TUI</td><td><span class="badge badge-safe">SAFE</span></td></tr>
+  <tr><td><code>derive_builder</code></td><td>0.20.2</td><td>Builder pattern proc macro</td><td><span class="badge badge-safe">SAFE</span></td></tr>
+  <tr><td><code>dirs</code></td><td>5</td><td>Platform-specific directories</td><td><span class="badge badge-safe">SAFE</span></td></tr>
+  <tr><td><code>dotenvy</code></td><td>0.15</td><td>Load .env files</td><td><span class="badge badge-safe">SAFE</span></td></tr>
+  <tr><td><code>futures-util</code></td><td>0.3</td><td>Async stream utilities</td><td><span class="badge badge-safe">SAFE</span></td></tr>
+  <tr><td><code>hostname</code></td><td>0.4</td><td>Get system hostname</td><td><span class="badge badge-safe">SAFE</span></td></tr>
+  <tr><td><code>keyring</code></td><td>3.6.3</td><td>OS credential store (Keychain, etc.)</td><td><span class="badge badge-review">REVIEW</span></td></tr>
+  <tr><td><code>percent-encoding</code></td><td>2.3.2</td><td>URL encoding utility</td><td><span class="badge badge-safe">SAFE</span></td></tr>
+  <tr><td><code>rand</code></td><td>0.8</td><td>Random number generation (nonces)</td><td><span class="badge badge-safe">SAFE</span></td></tr>
+  <tr><td><code>ratatui</code></td><td>0.30.0</td><td>Terminal UI framework</td><td><span class="badge badge-safe">SAFE</span></td></tr>
+  <tr><td><code>reqwest</code></td><td>0.12</td><td>HTTP client (rustls-tls, json, stream)</td><td><span class="badge badge-review">REVIEW</span></td></tr>
+  <tr><td><code>serde</code></td><td>1</td><td>Serialization framework</td><td><span class="badge badge-safe">SAFE</span></td></tr>
+  <tr><td><code>serde_json</code></td><td>1</td><td>JSON serialization</td><td><span class="badge badge-safe">SAFE</span></td></tr>
+  <tr><td><code>serde_yaml</code></td><td>0.9.34</td><td>YAML serialization</td><td><span class="badge badge-safe">SAFE</span></td></tr>
+  <tr><td><code>sha2</code></td><td>0.10</td><td>SHA-256 hashing</td><td><span class="badge badge-safe">SAFE</span></td></tr>
+  <tr><td><code>thiserror</code></td><td>2</td><td>Error type derive macros</td><td><span class="badge badge-safe">SAFE</span></td></tr>
+  <tr><td><code>tokio</code></td><td>1</td><td>Async runtime (full features)</td><td><span class="badge badge-safe">SAFE</span></td></tr>
+  <tr><td><code>yup-oauth2</code></td><td>12</td><td>Google OAuth2 + Service Account</td><td><span class="badge badge-review">REVIEW</span></td></tr>
+</table>
+
+<h2>REVIEW Dependencies - Detailed Analysis</h2>
+
+<div class="section">
+  <h3 style="color: var(--orange); margin-bottom: 0.5rem;">reqwest 0.12</h3>
+  <p><strong>Capability:</strong> Full HTTP client with TLS support</p>
+  <p><strong>Usage:</strong> All Google API requests - Discovery Document fetch, API execution, OAuth token exchange</p>
+  <p><strong>Features:</strong> json, stream, rustls-tls (default features disabled - no OpenSSL)</p>
+  <p><strong>Assessment:</strong> Essential for a Google API CLI. Uses rustls for TLS (pure Rust, no system dependency). Only connects to googleapis.com domains.</p>
+</div>
+
+<div class="section">
+  <h3 style="color: var(--orange); margin-bottom: 0.5rem;">yup-oauth2 12</h3>
+  <p><strong>Capability:</strong> OAuth2 token exchange, service account JWT signing</p>
+  <p><strong>Usage:</strong> Token refresh, service account auth, installed app OAuth flow</p>
+  <p><strong>Assessment:</strong> Standard Google OAuth library for Rust. Only communicates with Google OAuth endpoints.</p>
+</div>
+
+<div class="section">
+  <h3 style="color: var(--orange); margin-bottom: 0.5rem;">keyring 3.6.3</h3>
+  <p><strong>Capability:</strong> Read/write OS credential store</p>
+  <p><strong>Usage:</strong> Stores AES-256-GCM encryption key in macOS Keychain / Windows Credential Manager / Linux Secret Service</p>
+  <p><strong>Assessment:</strong> Security best practice for credential storage. Falls back to file-based storage if keyring unavailable.</p>
+</div>
+
+<h2>Notable Transitive Dependencies</h2>
+<table>
+  <tr><th>Crate</th><th>Purpose</th><th>Notes</th></tr>
+  <tr><td><code>rustls 0.23</code></td><td>TLS implementation</td><td>Pure Rust, no system OpenSSL</td></tr>
+  <tr><td><code>hyper 1.8</code></td><td>HTTP library</td><td>Via reqwest</td></tr>
+  <tr><td><code>tower</code></td><td>HTTP middleware</td><td>Via hyper</td></tr>
+  <tr><td><code>security-framework</code></td><td>macOS system integration</td><td>Via keyring (macOS only)</td></tr>
+  <tr><td><code>ring</code></td><td>Cryptography primitives</td><td>Via rustls</td></tr>
+  <tr><td><code>tokio-rustls</code></td><td>Async TLS</td><td>Via reqwest</td></tr>
+</table>
+
+<h2>What's NOT in Dependencies</h2>
+<table>
+  <tr><th>Category</th><th>Status</th><th>Implication</th></tr>
+  <tr><td>Analytics / Telemetry SDK</td><td><span class="badge badge-safe">Absent</span></td><td>No usage data collected</td></tr>
+  <tr><td>Crash Reporting (sentry, etc.)</td><td><span class="badge badge-safe">Absent</span></td><td>No crash data transmitted</td></tr>
+  <tr><td>Auto-update Mechanism</td><td><span class="badge badge-safe">Absent</span></td><td>No background update checks</td></tr>
+  <tr><td>Code Obfuscation</td><td><span class="badge badge-safe">Absent</span></td><td>Fully auditable binary</td></tr>
+  <tr><td>Database Client (SQLite, etc.)</td><td><span class="badge badge-safe">Absent</span></td><td>No local database</td></tr>
+  <tr><td>WebSocket Library</td><td><span class="badge badge-safe">Absent</span></td><td>No persistent connections</td></tr>
+  <tr><td>DNS Resolver Override</td><td><span class="badge badge-safe">Absent</span></td><td>Uses system DNS</td></tr>
+  <tr><td>Proxy / MITM Libraries</td><td><span class="badge badge-safe">Absent</span></td><td>No traffic interception</td></tr>
+</table>
+
+<h2>Build Profile</h2>
+<div class="section">
+  <p><strong>Release profile (dist):</strong> Inherits from <code>release</code>, uses thin LTO for smaller binaries.</p>
+  <p><strong>Dev dependencies:</strong> <code>serial_test 3.4.0</code> (test serialization), <code>tempfile 3</code> (temporary file handling in tests)</p>
+  <p><strong>Node.js dev deps:</strong> <code>@changesets/cli</code> (version management), <code>lefthook</code> (git hooks)</p>
+</div>
+
+<footer>Analysis generated on 2026-03-06 - Commit 59ad87327b3b8f2c188bf9fafbceab4674149e04 | <a href="index.html">Back to Dashboard</a></footer>
+</body>
+</html>
